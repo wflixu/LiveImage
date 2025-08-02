@@ -9,11 +9,7 @@ struct LiveImageApp: App {
 
     var body: some Scene {
         WindowGroup {
-            VStack {
-                Text("LiveImage Demo").font(.title)
-               
-            }.onAppear {
-            }
+            ContentView()
         }
     }
 }

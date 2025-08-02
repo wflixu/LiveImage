@@ -1,4 +1,6 @@
-public import UIKit
+import Foundation
+import QuartzCore
+import CoreGraphics
 import os
 
 fileprivate let logger = Logger(
@@ -53,7 +55,7 @@ internal final class AnimatedImageViewModel: Sendable {
     enum CacheKey: Hashable {
         case index(Int)
     }
-    let cache: Cache<CacheKey, UIImage>
+    let cache: Cache<CacheKey, PlatformImage>
     let configuration: AnimatedImageViewConfiguration
     
     init(name: String, configuration: AnimatedImageViewConfiguration) {
@@ -79,7 +81,15 @@ internal final class AnimatedImageViewModel: Sendable {
                     interpolationQuality: CGInterpolationQuality
                 ) async {
                     let image = autoreleasepool(invoking: { image.makeImage(at: index) })
-                    let uiImage = image.map(UIImage.init(cgImage:))
+                    #if os(iOS) || os(tvOS) || os(visionOS)
+                    let uiImage = image.map(PlatformImage.init(cgImage:))
+                    #elseif os(macOS)
+                    let uiImage = image.map { cg in
+                        let size = CGSize(width: cg.width, height: cg.height)
+                        let nsImage = PlatformImage(cgImage: cg, size: size)
+                        return nsImage
+                    }
+                    #endif
                     
                     guard !Task.isCancelled else { return }
                     let decodedImage = await uiImage?.decoded(for: size, interpolationQuality: interpolationQuality)
@@ -127,7 +137,7 @@ internal final class AnimatedImageViewModel: Sendable {
         }
     }
     
-    nonisolated func makeImage(at index: Int) -> UIImage? {
+    nonisolated func makeImage(at index: Int) -> PlatformImage? {
         cache.value(forKey: .index(index))
     }
     
