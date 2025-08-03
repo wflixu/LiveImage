@@ -9,11 +9,8 @@ public struct AnimatedImagePlayer: NSViewRepresentable {
         self.contentMode = contentMode
     }
 
-    public func makeNSView(context: Context) -> AnimatedImageView {
-       
-        return AnimatedImageView(frame: CGRect(
-            x:0,y:0,width: 300,height: 300
-        ))
+    public func makeNSView(context _: Context) -> AnimatedImageView {
+        return AnimatedImageView()
     }
 
     public func updateNSView(_ uiView: AnimatedImageView, context: Context) {
@@ -22,7 +19,7 @@ public struct AnimatedImagePlayer: NSViewRepresentable {
         uiView.startAnimating()
     }
 
-    public static func dismantleUIView(_ uiView: AnimatedImageView, coordinator: ()) {
+    public static func dismantleUIView(_ uiView: AnimatedImageView, coordinator _: ()) {
         uiView.stopAnimating()
         uiView.image = nil
     }
