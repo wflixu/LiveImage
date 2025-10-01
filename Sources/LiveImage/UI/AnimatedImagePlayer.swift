@@ -17,6 +17,7 @@ public struct AnimatedImagePlayer: NSViewRepresentable {
         uiView.configuration = context.environment.animatedImageViewConfiguration
         uiView.image = image
         uiView.startAnimating()
+        uiView.needsDisplay = true
     }
 
     public static func dismantleUIView(_ uiView: AnimatedImageView, coordinator _: ()) {

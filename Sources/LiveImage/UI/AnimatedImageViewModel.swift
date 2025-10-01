@@ -151,18 +151,18 @@ final class AnimatedImageViewModel: Sendable {
         return indices[index]
     }
 
-    /// Based on https://github.com/kirualex/SwiftyGif
-    /// See also UIImage+SwiftyGif.swift
+    /// 基于 https://github.com/kirualex/SwiftyGif
+    /// 另见 UIImage+SwiftyGif.swift
     private nonisolated func decimateFrames(
         delays: [Double],
         levelOfIntegrity: Double
     ) -> (displayIndices: [Int], delay: Double) {
-        // 保証する表示フレームの割合
+        // 需要保证的显示帧比例
         print("-------")
         let levelOfIntegrity = max(0.0, min(1.0, levelOfIntegrity))
-        // 各フレームが表示されるはずのtimestamp
+        // 每一帧应该显示的时间戳
         let timestamps = delays.runningSum.map { $0 }
-        // １フレームあたりの時間の候補
+        // 每帧的时间候选值
         let vsyncInterval: [Double] = [
             1.0 / 1.0,
             1.0 / 2.0,
@@ -181,20 +181,20 @@ final class AnimatedImageViewModel: Sendable {
         var resultDelayTime = 0.1
         var displayIndices: [Int] = (0 ..< delays.count).map { $0 }
 
-        // 2枚未満は無条件で出す
+        // 少于2帧时无条件全部显示
         if delays.count <= 2 {
             return (displayIndices, delays.first ?? resultDelayTime)
         }
-        // 間引かない場合は計算しない
+        // 不做帧间隔处理时直接返回
         if levelOfIntegrity == 1 {
             return (displayIndices, delays.first ?? resultDelayTime)
         }
 
         for delayTime in vsyncInterval {
-            // 候補のフレーム時間で描画された時のvsyncの位置
+            // 用候选帧时间渲染时的 vsync 位置
             let vsyncIndices = timestamps.map { Int($0 / delayTime) }
             let uniqueVsyncIndices = Set(vsyncIndices).map { $0 }
-            // 表示に必要なフレーム数
+            // 需要显示的帧数
             let needsDisplayFrameCount = Int(
                 Double(vsyncIndices.count) * levelOfIntegrity
             )

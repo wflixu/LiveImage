@@ -40,7 +40,7 @@ open class AnimatedImageView: NSView {
 
     private func setupDisplayLink() {
         // NSView.displayLink(target:selector:) 是 macOS 14 新增的
-        updateLink = displayLink(target: self, selector: #selector(step))
+        updateLink =  self.displayLink(target: self, selector: #selector(step))
         updateLink.add(to: .current, forMode: .default)
         updateLink.isPaused = false
     }

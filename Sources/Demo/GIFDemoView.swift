@@ -11,7 +11,7 @@ import SwiftUI
 struct GIFDemoView: View {
     @State var image: AnimatedImage?
     @State var imageUrl: URL?
-
+    
     var body: some View {
         VStack {
             HStack {
@@ -22,14 +22,12 @@ struct GIFDemoView: View {
                 Text(imageUrl.path)
             }
             if let aimage = image {
-                AnimatedImagePlayer(image: aimage)
-                    .scaledToFill()
-                    .frame(width: 200, height: 200)
-                        .clipped()
+                LiveImageView(image: aimage)
             }
         }
         .onAppear {
             loadImage()
+            
         }
     }
 
