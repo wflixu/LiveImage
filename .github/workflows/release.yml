@@ -1,0 +1,128 @@
+name: Create Release
+
+# 触发条件：推送以 'v' 开头的标签时触发
+on:
+  push:
+    tags:
+      - 'v*'
+
+# 权限配置
+permissions:
+  contents: write  # 允许写入内容（创建 release）
+  discussions: write  # 允许创建讨论
+
+jobs:
+  release:
+    runs-on: macos-latest  # 使用 macOS 环境，因为项目支持 iOS/macOS
+
+    steps:
+    - name: 检出代码
+      uses: actions/checkout@v4
+
+    - name: 设置 Swift 环境
+      uses: swift-actions/setup-swift@v2
+      with:
+        swift-version: '6.2'  # 使用项目支持的 Swift 版本
+
+    - name: 缓存 Swift Package Manager
+      uses: actions/cache@v3
+      with:
+        path: .build
+        key: ${{ runner.os }}-spm-${{ hashFiles('**/Package.resolved') }}
+        restore-keys: |
+          ${{ runner.os }}-spm-
+
+    - name: 构建项目
+      run: |
+        swift build
+
+    - name: 运行测试
+      run: |
+        swift test --enable-code-coverage
+
+    - name: 生成代码覆盖率报告
+      run: |
+        xcrun llvm-cov report .build/debug/LiveImagePackageTests.xctest/Contents/MacOS/LiveImagePackageTests -instr-profile .build/debug/codecov/default.profdata > coverage.txt
+
+    - name: 显示代码覆盖率
+      run: |
+        cat coverage.txt
+
+    - name: 提取 Release Notes
+      id: extract_release_notes
+      run: |
+        # 从 git tag message 中提取 release notes
+        TAG_MESSAGE=$(git tag -l "${{ github.ref_name }}" --format='%(contents)')
+
+        # 如果 tag message 为空，使用默认内容
+        if [ -z "$TAG_MESSAGE" ]; then
+          TAG_MESSAGE="Release ${{ github.ref_name }}
+
+          ## 🚀 Features
+          - Support for GIF, APNG, and WebP animated image formats
+          - High-performance SwiftUI integration with CADisplayLink
+          - Swift 6.2 strict concurrency compliance
+          - Cross-platform support (iOS 18+, macOS 15+)
+
+          ## 📦 Changes
+          View full changelog at: https://github.com/wflixu/LiveImage/commits/${{ github.ref_name }}"
+        fi
+
+        # 保存到文件供后续步骤使用
+        echo "$TAG_MESSAGE" > release_notes.txt
+
+        # 设置输出变量
+        echo "release_notes<<EOF" >> $GITHUB_OUTPUT
+        echo "$TAG_MESSAGE" >> $GITHUB_OUTPUT
+        echo "EOF" >> $GITHUB_OUTPUT
+
+    - name: 显示 Release Notes
+      run: |
+        cat release_notes.txt
+
+    - name: 创建 GitHub Release
+      uses: softprops/action-gh-release@v2
+      with:
+        # 使用标签名作为 release 标题（去掉 'v' 前缀）
+        name: Release ${{ github.ref_name }}
+        # 使用提取的 release notes
+        body: ${{ steps.extract_release_notes.outputs.release_notes }}
+        # 预生成版本名称（去掉 'v' 前缀）
+        tag_name: ${{ github.ref_name }}
+        # 是否为 draft release
+        draft: false
+        # 是否为 prerelease
+        prerelease: false
+        # 包含的文件
+        files: |
+          LICENSE
+          README.md
+          coverage.txt
+        # 生成 release 说明
+        generate_release_notes: true
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: 构建演示应用
+      run: |
+        swift build --product Demo
+
+    - name: 上传演示应用构建产物
+      uses: actions/upload-artifact@v3
+      with:
+        name: LiveImage-Demo-${{ github.ref_name }}
+        path: .build/release/Demo
+        retention-days: 30
+
+  update_package_index:
+    needs: release
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+
+    steps:
+    - name: 通知 Swift Package Index
+      run: |
+        echo "🎉 LiveImage ${{ github.ref_name }} 已发布！"
+        echo "📦 包将自动同步到 Swift Package Index"
+        echo "🔗 GitHub Release: https://github.com/wflixu/LiveImage/releases/tag/${{ github.ref_name }}"
+        echo "📚 Swift Package Index: https://swiftpackageindex.com/wflixu/LiveImage"
