@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(swift build:*)",
+      "Bash(swift run:*)",
+      "Bash(swift test)",
+      "Bash(timeout:*)",
+      "Bash(pkill:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git tag:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

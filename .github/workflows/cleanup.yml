@@ -1,0 +1,51 @@
+name: Cleanup Artifacts
+
+# 每月清理一次旧的工作流产物
+on:
+  schedule:
+    - cron: '0 0 1 * *'  # 每月1日午夜运行
+  workflow_dispatch:  # 允许手动触发
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    permissions:
+      actions: write  # 需要此权限来删除产物
+
+    steps:
+    - name: 删除旧的产物
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const { owner, repo } = context.repo;
+          const artifacts = await github.rest.actions.listArtifactsForRepo({
+            owner,
+            repo,
+            per_page: 100
+          });
+
+          // 删除超过30天的产物
+          const thirtyDaysAgo = new Date();
+          thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+          let deletedCount = 0;
+
+          for (const artifact of artifacts.data.artifacts) {
+            const createdDate = new Date(artifact.created_at);
+            if (createdDate < thirtyDaysAgo) {
+              try {
+                await github.rest.actions.deleteArtifact({
+                  owner,
+                  repo,
+                  artifact_id: artifact.id
+                });
+                deletedCount++;
+                console.log(`Deleted artifact: ${artifact.name} (created: ${artifact.created_at})`);
+              } catch (error) {
+                console.warn(`Failed to delete artifact ${artifact.name}: ${error.message}`);
+              }
+            }
+          }
+
+          console.log(`Cleanup completed. Deleted ${deletedCount} artifacts.`);
+          return deletedCount;
