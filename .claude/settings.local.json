@@ -5,7 +5,8 @@
       "Bash(swift run:*)",
       "Bash(swift test)",
       "Bash(timeout:*)",
-      "Bash(pkill:*)"
+      "Bash(pkill:*)",
+      "Bash(git add:*)"
     ],
     "deny": [],
     "ask": []
