@@ -19,9 +19,9 @@ struct ContentView: View {
            HStack {
                APNGDemoView()
            }
-//            HStack {
-//                WEBPDemoView()
-//            }
+           HStack {
+               WEBPDemoView()
+           }
         }
     }
 }
