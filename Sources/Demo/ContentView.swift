@@ -16,9 +16,9 @@ struct ContentView: View {
             HStack {
                 GIFDemoView()
             }
-//            HStack {
-//                APNGDemoView()
-//            }
+           HStack {
+               APNGDemoView()
+           }
 //            HStack {
 //                WEBPDemoView()
 //            }

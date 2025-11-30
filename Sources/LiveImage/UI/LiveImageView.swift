@@ -47,6 +47,8 @@ public struct LiveImageView: View {
         }
         .onAppear {
             Task {
+                // Update the image provider with the actual animated image
+                imageProvider?.update(for: CGSize(width: 300, height: 300), image: liveImage)
                 driver.start()
             }
         }
@@ -57,11 +59,19 @@ public struct LiveImageView: View {
 
     private func updateFrame(currentTime: TimeInterval) {
         let index = imageProvider?.index(for: currentTime)
-        if let index, currentFrameIndex != index {
-            if let platformImage = imageProvider?.makeImage(at: index) {
-                currentFrameIndex = index
-                currentImage = platformImage
+        if let index {
+            print("🎬 Frame index: \(index), current: \(currentFrameIndex)")
+            if currentFrameIndex != index {
+                if let platformImage = imageProvider?.makeImage(at: index) {
+                    currentFrameIndex = index
+                    currentImage = platformImage
+                    print("✅ Updated frame \(index) with image: \(platformImage.size)")
+                } else {
+                    print("❌ Failed to get image for frame \(index)")
+                }
             }
+        } else {
+            print("❌ No frame index available")
         }
     }
 }
@@ -71,13 +81,16 @@ final class DisplayLinkDriver: ObservableObject {
     @Published var timestamp: TimeInterval = 0
 
     private var updateLink: CADisplayLink?
+    private var isSetup = false
 
     init() {
-        setupDisplayLink()
-    }
-
-    deinit {
-        stop()
+        // Defer setup to avoid accessing self before initialization
+        Task { @MainActor in
+            if !isSetup {
+                setupDisplayLink()
+                isSetup = true
+            }
+        }
     }
 
     private func setupDisplayLink() {
@@ -87,7 +100,7 @@ final class DisplayLinkDriver: ObservableObject {
             print("No main screen available for display link.")
         }
         if let updateLink = updateLink {
-            updateLink.add(to: .current, forMode: .default)
+            updateLink.add(to: .main, forMode: .default)
             updateLink.isPaused = false
         } else {
             print("Failed to create display link.")
@@ -96,13 +109,15 @@ final class DisplayLinkDriver: ObservableObject {
 
     @objc public func step(_ displaylink: CADisplayLink) {
         print(" step     ----------")
-        MainActor.run {
-            self.timestamp = displaylink.targetTimestamp
-        }
+        timestamp = displaylink.targetTimestamp
     }
 
     public func start() {
         print("----------")
+        if !isSetup {
+            setupDisplayLink()
+            isSetup = true
+        }
         guard let updateLink = updateLink else { return }
         updateLink.isPaused = false
     }
@@ -112,5 +127,6 @@ final class DisplayLinkDriver: ObservableObject {
         updateLink.isPaused = true
         updateLink.invalidate()
         self.updateLink = nil
+        isSetup = false
     }
 }

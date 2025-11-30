@@ -59,3 +59,5 @@ struct ContentView: View {
 
 MIT License. 详见 [LICENSE](LICENSE) 文件。
 
+
+ln -s /opt/homebrew/bin/codex ~/bin/myapp
